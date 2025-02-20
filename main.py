@@ -3,17 +3,32 @@ import math
 
 from datetime import datetime
 from matplotlib import pyplot
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, PillowWriter
+
+from enum import Enum
+
+class Approach(Enum):
+    ZERO_FIRST = 1
+    UPTIME_MEAN = 2
+    RAPID_FIRST_COMPUTATION = 3
+
+class Mode(Enum):
+    LIVE_VIEW = 0
+    SAVE_ANIMATION = 1
 
 # this should be the interface used in the device
 # to access the internet
 INTERFACE_TO_MONITOR='wlp4s0'
+DEBUG_TICK=False
+MODE = Mode.LIVE_VIEW
 
 INTERFACE_NAME_POSITION = 0
 INTERFACE_BYTES_POSITION = 1
 
 NS_IN_MS = 1_000_000
 BYTES_IN_KB = 1_000
+
+selected_approach = Approach.ZERO_FIRST
 
 
 class SeriesManager:
@@ -53,14 +68,14 @@ class SeriesManager:
 
     def tick(self):
         t = math.floor(time.time_ns() / NS_IN_MS)
-        print('tick', t)
+        if DEBUG_TICK: print('tick', t)
         if t - self.last_computation_time < 1000:
             return
 
         self.last_computation_time = t
         self.iteration += 1
         self.load_sc_datapoint()
-        if len(self.sc) > 1:
+        if selected_approach == Approach.ZERO_FIRST and len(self.sc) > 1:
             self.load_sd_datapoint()
 
 
@@ -81,7 +96,7 @@ figure.gca().tick_params(axis='y', colors='#dddddd')
 
 figure.gca().yaxis.label.set_color('#dddddd')
 
-figure.gca().set_ylabel('Load (KB)')
+figure.gca().set_ylabel('Load (KB/s)')
 
 figure.gca().set_xticks([])
 
@@ -101,6 +116,9 @@ def update(frame):
     figure.gca().autoscale_view()
     return line,
 
-animation = FuncAnimation(figure, update, interval=10)
+animation = FuncAnimation(figure, update, interval=10, frames=2_000)
 
-pyplot.show()
+if MODE == Mode.SAVE_ANIMATION:
+    animation.save(filename="graph.gif", writer="pillow")
+elif MODE == Mode.LIVE_VIEW:
+    pyplot.show()
