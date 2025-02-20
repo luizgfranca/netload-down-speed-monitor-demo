@@ -20,7 +20,10 @@ class Mode(Enum):
 # to access the internet
 INTERFACE_TO_MONITOR='wlp4s0'
 DEBUG_TICK=False
-MODE = Mode.LIVE_VIEW
+MODE = Mode.SAVE_ANIMATION
+
+
+
 
 INTERFACE_NAME_POSITION = 0
 INTERFACE_BYTES_POSITION = 1
@@ -36,7 +39,7 @@ class SeriesManager:
         self.iteration = 0
         self.sc = []
         self.sd = []
-        self.last_computation_time = math.floor(time.time_ns() / NS_IN_MS)
+        self.last_computation_time = 0
 
     def load_sc_datapoint(self):
         t = math.floor(time.time_ns() / NS_IN_MS)
@@ -58,10 +61,15 @@ class SeriesManager:
         self.sc.append(data_point)
         f.close()
 
-    def load_sd_datapoint(self):
-        i = len(self.sc) -1
-        value = self.sc[i][1] - self.sc[i-1][1]
-        t = self.sc[i][0]
+    def load_sd_datapoint(self, t):
+        value = 0
+
+        if selected_approach == Approach.ZERO_FIRST:
+            if len(self.sc) > 1:
+                i = len(self.sc) -1
+                value = self.sc[i][1] - self.sc[i-1][1]
+                t = self.sc[i][0]
+
         data_point = (t, value)
         print('Sd: ', data_point)
         self.sd.append((t, value))
@@ -75,8 +83,7 @@ class SeriesManager:
         self.last_computation_time = t
         self.iteration += 1
         self.load_sc_datapoint()
-        if selected_approach == Approach.ZERO_FIRST and len(self.sc) > 1:
-            self.load_sd_datapoint()
+        self.load_sd_datapoint(t)
 
 
 mgr = SeriesManager()
