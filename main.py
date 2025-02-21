@@ -16,6 +16,10 @@ class Mode(Enum):
     LIVE_VIEW = 0
     SAVE_ANIMATION = 1
 
+class TimeBase(Enum):
+    TIMESTAMP = 0,
+    UPTIME = 1
+
 # this should be the interface used in the device
 # to access the internet
 INTERFACE_TO_MONITOR='wlp4s0'
@@ -28,10 +32,26 @@ MODE = Mode.SAVE_ANIMATION
 INTERFACE_NAME_POSITION = 0
 INTERFACE_BYTES_POSITION = 1
 
+DATAPOINT_TIME_POS = 0
+DATAPOINT_VALUE_POS = 1
+
 NS_IN_MS = 1_000_000
 BYTES_IN_KB = 1_000
+DELTA_T_MS = 1000
 
-selected_approach = Approach.ZERO_FIRST
+selected_approach = Approach.UPTIME_MEAN
+
+
+
+time_base = TimeBase.TIMESTAMP if selected_approach == Approach.ZERO_FIRST else TimeBase.UPTIME
+def get_time():
+    if selected_approach == Approach.ZERO_FIRST:
+        return math.floor(time.time_ns() / NS_IN_MS)
+
+    with open('/proc/uptime', 'r') as f:
+        uptime_seconds = float(f.readline().split()[0])
+
+    return uptime_seconds * 1000
 
 
 class SeriesManager:
@@ -40,9 +60,10 @@ class SeriesManager:
         self.sc = []
         self.sd = []
         self.last_computation_time = 0
+        self.imaginary_first = (0,0)
 
     def load_sc_datapoint(self):
-        t = math.floor(time.time_ns() / NS_IN_MS)
+        t = get_time()
         f = open('/proc/net/dev', 'r')
         data = f.readlines()
         interface_info_lines = data[2:]
@@ -61,6 +82,21 @@ class SeriesManager:
         self.sc.append(data_point)
         f.close()
 
+    def _value_sc(self, i):
+        return self.sc[i][DATAPOINT_VALUE_POS] if i >= 0 else self.imaginary_first[DATAPOINT_VALUE_POS]
+
+    def _time_sc(self, i):
+        return self.sc[i][DATAPOINT_TIME_POS] if i >= 0 else self.imaginary_first[DATAPOINT_TIME_POS]
+
+
+    def _difference_with_variable_interval(self, i):
+        return (
+            DELTA_T_MS / (
+                self._time_sc(i) - self._time_sc(i-1)
+            )) * (
+                self._value_sc(i) - self._value_sc(i-1)
+            )
+
     def load_sd_datapoint(self, t):
         value = 0
 
@@ -70,20 +106,24 @@ class SeriesManager:
                 value = self.sc[i][1] - self.sc[i-1][1]
                 t = self.sc[i][0]
 
-        data_point = (t, value)
+            data_point = (t, value)
+        if selected_approach == Approach.UPTIME_MEAN:
+            value = self._difference_with_variable_interval(self.iteration)
+            data_point = (t, value)
+
         print('Sd: ', data_point)
         self.sd.append((t, value))
 
     def tick(self):
-        t = math.floor(time.time_ns() / NS_IN_MS)
+        t = get_time()
         if DEBUG_TICK: print('tick', t)
-        if t - self.last_computation_time < 1000:
+        if t - self.last_computation_time < DELTA_T_MS:
             return
 
         self.last_computation_time = t
-        self.iteration += 1
         self.load_sc_datapoint()
         self.load_sd_datapoint(t)
+        self.iteration += 1
 
 
 mgr = SeriesManager()
