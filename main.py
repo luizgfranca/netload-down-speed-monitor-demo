@@ -24,7 +24,7 @@ class TimeBase(Enum):
 # to access the internet
 INTERFACE_TO_MONITOR='wlp4s0'
 selected_approach = Approach.RAPID_FIRST_COMPUTATION
-MODE = Mode.SAVE_ANIMATION
+MODE = Mode.LIVE_VIEW
 DEBUG_TICK=False
 FIXED_ADJUSTMENT_WINDOW=False
 
