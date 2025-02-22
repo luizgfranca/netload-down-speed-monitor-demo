@@ -20,13 +20,17 @@ class TimeBase(Enum):
     TIMESTAMP = 0,
     UPTIME = 1
 
+##===============================================================
+# BEHAVIOR PARAMETERS
+##===============================================================
+
 # this should be the interface used in the device
 # to access the internet
 INTERFACE_TO_MONITOR='wlp4s0'
-selected_approach = Approach.RAPID_FIRST_COMPUTATION
-MODE = Mode.LIVE_VIEW
+selected_approach = Approach.UPTIME_MEAN
+MODE = Mode.SAVE_ANIMATION
 DEBUG_TICK=False
-FIXED_ADJUSTMENT_WINDOW=False
+FIXED_ADJUSTMENT_WINDOW=True
 
 
 
