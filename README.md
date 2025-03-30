@@ -1,6 +1,6 @@
 ## Network Load: Down Speed Monitor Demo
 
-This project was written to make the graphs on this article: https://luizgfranca.github.io/blog/posts/002/ about techniques for the first computation of cumulative series. It consists of a Python script that gets the usage information from the operating system and creates a live graph representing it according with the different techniques that will be described in the article.
+This project was written to make the graphs on [this article](https://luizgfranca.github.io/blog/posts/002/) about techniques for the first computation of cumulative series. It consists of a Python script that gets the usage information from the operating system and creates a live graph representing it according with the different techniques that will be described in the article.
 
 #### Requirements
  - Linux
